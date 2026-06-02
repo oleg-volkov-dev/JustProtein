@@ -1,5 +1,6 @@
 package com.justprotein.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import com.justprotein.ui.theme.*
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,8 +35,32 @@ fun TodayScreen(viewModel: ProteinViewModel) {
     
     val todayEntries = entries.filter { viewModel.isToday(it.timestamp) }
     val currentTotal = todayEntries.sumOf { it.grams }
-    val progress = if (goal > 0) (currentTotal.toFloat() / goal).coerceAtMost(1f) else 0f
+    val progressRatio = if (goal > 0) (currentTotal.toFloat() / goal) else 0f
+    val progress = progressRatio.coerceAtMost(1f)
     
+    val targetColor = when {
+        progressRatio < 0.2f -> ProgressRed
+        progressRatio < 0.5f -> ProgressDarkOrange
+        progressRatio < 0.7f -> ProgressLightOrange
+        progressRatio < 1.0f -> ProgressGreen
+        else -> Gold
+    }
+    
+    val animatedColor by animateColorAsState(
+        targetValue = targetColor,
+        animationSpec = tween(durationMillis = 500)
+    )
+
+    val infiniteTransition = rememberInfiniteTransition()
+    val goldOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
+    )
+
     var showCustomDialog by remember { mutableStateOf(false) }
 
     Column(
@@ -49,13 +80,33 @@ fun TodayScreen(viewModel: ProteinViewModel) {
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        LinearProgressIndicator(
-            progress = progress,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(12.dp),
-            strokeCap = StrokeCap.Round
-        )
+        if (progressRatio >= 1.0f) {
+            // Shiny Gold Progress Bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(Gold, GoldLight, Gold),
+                            start = androidx.compose.ui.geometry.Offset(goldOffset, 0f),
+                            end = androidx.compose.ui.geometry.Offset(goldOffset + 300f, 0f),
+                            tileMode = androidx.compose.ui.graphics.TileMode.Mirror
+                        )
+                    )
+            )
+        } else {
+            LinearProgressIndicator(
+                progress = progress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp),
+                color = animatedColor,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                strokeCap = StrokeCap.Round
+            )
+        }
         
         Spacer(modifier = Modifier.height(32.dp))
         
