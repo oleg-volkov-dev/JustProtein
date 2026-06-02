@@ -282,13 +282,16 @@ fun ProteinBullMascot(progress: Float, modifier: Modifier = Modifier) {
         else -> painterResource(id = R.drawable.happy)
     }
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Box(
+        modifier = modifier.aspectRatio(1f),
+        contentAlignment = Alignment.Center
+    ) {
         // 1. Frame
         Image(
             painter = painterResource(id = R.drawable.frame),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
+            contentScale = ContentScale.FillBounds
         )
 
         // 2. Clipped full_fill
@@ -296,25 +299,25 @@ fun ProteinBullMascot(progress: Float, modifier: Modifier = Modifier) {
             painter = painterResource(id = R.drawable.full_fill),
             contentDescription = null,
             modifier = Modifier
-                .fillMaxSize()
+                .matchParentSize()
                 .clip(VerticalProgressShape(animatedProgress)),
-            contentScale = ContentScale.Fit
+            contentScale = ContentScale.FillBounds
         )
 
         // 3. Parts fill
         Image(
             painter = painterResource(id = R.drawable.parts_fill),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
+            modifier = Modifier.matchParentSize(),
+            contentScale = ContentScale.FillBounds
         )
 
         // 4. Face
         Image(
             painter = facePainter,
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
+            modifier = Modifier.matchParentSize(),
+            contentScale = ContentScale.FillBounds
         )
     }
 }
