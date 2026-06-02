@@ -16,9 +16,19 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.LayoutDirection
+import com.justprotein.R
 import com.justprotein.ui.theme.*
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -27,6 +37,7 @@ import com.justprotein.data.ProteinEntry
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun TodayScreen(viewModel: ProteinViewModel) {
@@ -63,6 +74,11 @@ fun TodayScreen(viewModel: ProteinViewModel) {
 
     var showCustomDialog by remember { mutableStateOf(false) }
 
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -70,7 +86,11 @@ fun TodayScreen(viewModel: ProteinViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Today", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(24.dp))
+        
+        ProteinBullMascot(
+            progress = progress,
+            modifier = Modifier.size(220.dp)
+        )
         
         Text(
             text = "$currentTotal / ${goal}g",
@@ -240,4 +260,75 @@ fun CustomAddDialog(onDismiss: () -> Unit, onConfirm: (Int) -> Unit) {
             }
         }
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProteinBullMascotPreview() {
+    ProteinBullMascot(progress = 0.5f, modifier = Modifier.size(220.dp))
+}
+
+@Composable
+fun ProteinBullMascot(progress: Float, modifier: Modifier = Modifier) {
+    val clampedProgress = progress.coerceIn(0f, 1f)
+    val animatedProgress by animateFloatAsState(
+        targetValue = clampedProgress,
+        animationSpec = tween(durationMillis = 1000)
+    )
+
+    val facePainter = when {
+        clampedProgress < 0.3f -> painterResource(id = R.drawable.sad)
+        clampedProgress < 0.6f -> painterResource(id = R.drawable.neutral)
+        else -> painterResource(id = R.drawable.happy)
+    }
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        // 1. Frame
+        Image(
+            painter = painterResource(id = R.drawable.frame),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+
+        // 2. Clipped full_fill
+        Image(
+            painter = painterResource(id = R.drawable.full_fill),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(VerticalProgressShape(animatedProgress)),
+            contentScale = ContentScale.Fit
+        )
+
+        // 3. Parts fill
+        Image(
+            painter = painterResource(id = R.drawable.parts_fill),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+
+        // 4. Face
+        Image(
+            painter = facePainter,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+    }
+}
+
+class VerticalProgressShape(private val progress: Float) : Shape {
+    override fun createOutline(
+        size: androidx.compose.ui.geometry.Size,
+        layoutDirection: LayoutDirection,
+        density: androidx.compose.ui.unit.Density
+    ): Outline {
+        val path = Path().apply {
+            val top = size.height * (1f - progress)
+            addRect(androidx.compose.ui.geometry.Rect(0f, top, size.width, size.height))
+        }
+        return Outline.Generic(path)
+    }
 }
