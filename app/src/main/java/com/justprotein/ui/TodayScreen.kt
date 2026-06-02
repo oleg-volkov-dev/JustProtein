@@ -286,37 +286,51 @@ fun ProteinBullMascot(progress: Float, modifier: Modifier = Modifier) {
         modifier = modifier.aspectRatio(1f),
         contentAlignment = Alignment.Center
     ) {
-        // 1. Frame
+        // 1. Frame (Base layer - change this to shift the whole bull)
         Image(
             painter = painterResource(id = R.drawable.frame),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(x = 0.dp, y = 0.dp), // TWEAK HERE
             contentScale = ContentScale.FillBounds
         )
 
-        // 2. Clipped full_fill
+        // 2. Clipped full_fill (The colored body)
         Image(
             painter = painterResource(id = R.drawable.full_fill),
             contentDescription = null,
             modifier = Modifier
                 .matchParentSize()
+                .offset(x = 0.dp, y = 0.dp) // TWEAK HERE
                 .clip(VerticalProgressShape(animatedProgress)),
             contentScale = ContentScale.FillBounds
         )
 
-        // 3. Parts fill
+        // 3. Parts fill (The detail lines)
         Image(
             painter = painterResource(id = R.drawable.parts_fill),
             contentDescription = null,
-            modifier = Modifier.matchParentSize(),
+            modifier = Modifier
+                .matchParentSize()
+                .offset(x = 0.dp, y = 4.dp), // TWEAK HERE
             contentScale = ContentScale.FillBounds
         )
 
-        // 4. Face
+        // 4. Face (The eyes and mouth)
+        // Adjust x and y individually for each expression if needed
+        val faceOffset = when {
+            clampedProgress < 0.3f -> IntSize(0, 0) // Sad offset (x, y)
+            clampedProgress < 0.6f -> IntSize(0, 0) // Neutral offset (x, y)
+            else -> IntSize(0, 0) // Happy offset (x, y)
+        }
+
         Image(
             painter = facePainter,
             contentDescription = null,
-            modifier = Modifier.matchParentSize(),
+            modifier = Modifier
+                .matchParentSize()
+                .offset(x = faceOffset.width.dp, y = faceOffset.height.dp), // TWEAK HERE
             contentScale = ContentScale.FillBounds
         )
     }
