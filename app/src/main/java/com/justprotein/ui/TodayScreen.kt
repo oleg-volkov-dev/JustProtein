@@ -85,7 +85,7 @@ fun TodayScreen(viewModel: ProteinViewModel) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Today", style = MaterialTheme.typography.headlineMedium)
+        Text("Today", style = MaterialTheme.typography.headlineMedium, color = Color.Blue)
         
         ProteinBullMascot(
             progress = progress,
@@ -313,14 +313,14 @@ fun ProteinBullMascot(progress: Float, modifier: Modifier = Modifier) {
             contentDescription = null,
             modifier = Modifier
                 .matchParentSize()
-                .offset(x = 0.dp, y = 4.dp), // TWEAK HERE
+                .offset(x = 0.dp, y = 2.dp), // RESET TO ZERO
             contentScale = ContentScale.FillBounds
         )
 
         // 4. Face (The eyes and mouth)
         // Adjust x and y individually for each expression if needed
         val faceOffset = when {
-            clampedProgress < 0.3f -> IntSize(0, 0) // Sad offset (x, y)
+            clampedProgress < 0.3f -> IntSize(0, -25) // Sad offset (x, y)
             clampedProgress < 0.6f -> IntSize(0, 0) // Neutral offset (x, y)
             else -> IntSize(0, 0) // Happy offset (x, y)
         }
