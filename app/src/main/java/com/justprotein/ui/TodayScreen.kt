@@ -38,6 +38,12 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.tooling.preview.Preview
+import android.media.MediaPlayer
+import android.provider.Settings
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.graphicsLayer
 
 @Composable
 fun TodayScreen(viewModel: ProteinViewModel) {
@@ -78,6 +84,34 @@ fun TodayScreen(viewModel: ProteinViewModel) {
         targetValue = progress,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
     )
+
+    val context = LocalContext.current
+    var goalReachedTriggered by remember { mutableStateOf(false) }
+
+    // Sound effect logic
+    LaunchedEffect(progressRatio >= 1.0f) {
+        if (progressRatio >= 1.0f && !goalReachedTriggered) {
+            try {
+                // Try to play custom celebration sound if it exists
+                val customSoundId = context.resources.getIdentifier("celebration", "raw", context.packageName)
+                val uri = if (customSoundId != 0) {
+                    android.net.Uri.parse("android.resource://${context.packageName}/$customSoundId")
+                } else {
+                    // Fallback to a slightly more "energetic" system sound than the default notification
+                    Settings.System.DEFAULT_RINGTONE_URI
+                }
+                
+                val mp = MediaPlayer.create(context, uri)
+                mp.start()
+                mp.setOnCompletionListener { it.release() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            goalReachedTriggered = true
+        } else if (progressRatio < 1.0f) {
+            goalReachedTriggered = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -271,9 +305,54 @@ fun ProteinBullMascotPreview() {
 @Composable
 fun ProteinBullMascot(progress: Float, modifier: Modifier = Modifier) {
     val clampedProgress = progress.coerceIn(0f, 1f)
+    val isGoalReached = progress >= 1f
+    
     val animatedProgress by animateFloatAsState(
         targetValue = clampedProgress,
         animationSpec = tween(durationMillis = 1000)
+    )
+
+    // Pulse and Shake animations
+    val infiniteTransition = rememberInfiniteTransition(label = "celebration")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = if (isGoalReached) 1.08f else 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+
+    val shakeOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = if (isGoalReached) 4f else 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(50, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shake"
+    )
+
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = if (isGoalReached) 0.8f else 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow"
+    )
+
+    // Star sparkle animations
+    val starAlpha by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = if (isGoalReached) 1f else 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutLinearInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "starAlpha"
     )
 
     val facePainter = when {
@@ -283,7 +362,45 @@ fun ProteinBullMascot(progress: Float, modifier: Modifier = Modifier) {
     }
 
     Box(
-        modifier = modifier.aspectRatio(1f),
+        modifier = modifier
+            .aspectRatio(1f)
+            .graphicsLayer(
+                scaleX = pulseScale,
+                scaleY = pulseScale,
+                translationX = shakeOffset
+            )
+            .drawBehind {
+                if (isGoalReached) {
+                    // Golden Glow
+                    drawCircle(
+                        color = Gold.copy(alpha = glowAlpha * 0.4f),
+                        radius = size.minDimension / 1.4f,
+                        style = Stroke(width = 30.dp.toPx())
+                    )
+
+                    // Simple "Stars" (Sparkles)
+                    val starColor = GoldLight.copy(alpha = starAlpha)
+                    val centerX = size.width / 2f
+                    val centerY = size.height / 2f
+                    val radius = size.minDimension / 2f
+                    
+                    // Draw 4 stars around the mascot
+                    val starPoints = listOf(
+                        androidx.compose.ui.geometry.Offset(centerX - radius, centerY - radius),
+                        androidx.compose.ui.geometry.Offset(centerX + radius, centerY - radius),
+                        androidx.compose.ui.geometry.Offset(centerX - radius, centerY + radius),
+                        androidx.compose.ui.geometry.Offset(centerX + radius, centerY + radius)
+                    )
+
+                    starPoints.forEach { point ->
+                        drawCircle(
+                            color = starColor,
+                            radius = 8.dp.toPx() * starAlpha,
+                            center = point
+                        )
+                    }
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
         // 1. Frame (Base layer - change this to shift the whole bull)
@@ -313,7 +430,7 @@ fun ProteinBullMascot(progress: Float, modifier: Modifier = Modifier) {
             contentDescription = null,
             modifier = Modifier
                 .matchParentSize()
-                .offset(x = 0.dp, y = 2.dp), // RESET TO ZERO
+                .offset(x = 0.dp, y = 0.dp), // RESET TO ZERO
             contentScale = ContentScale.FillBounds
         )
 
