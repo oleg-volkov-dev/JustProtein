@@ -320,7 +320,7 @@ fun ProteinBullMascot(progress: Float, modifier: Modifier = Modifier) {
         // 4. Face (The eyes and mouth)
         // Adjust x and y individually for each expression if needed
         val faceOffset = when {
-            clampedProgress < 0.3f -> IntSize(0, -25) // Sad offset (x, y)
+            clampedProgress < 0.3f -> IntSize(0, 0) // Sad offset (x, y)
             clampedProgress < 0.6f -> IntSize(0, 0) // Neutral offset (x, y)
             else -> IntSize(0, 0) // Happy offset (x, y)
         }
